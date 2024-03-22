@@ -1840,3 +1840,340 @@ BEGIN
     END IF;
 END;
 /
+
+--15 CURSORES*****************************************************************************************************************************
+
+--C1
+-- Cursor para obtener todos los clientes
+DECLARE
+  CURSOR clientes_cursor IS
+    SELECT * FROM C##finnk.tab_listado_clientes;
+BEGIN
+  NULL;
+END;
+
+--C2
+-- Cursor para obtener todos los restaurantes
+DECLARE
+  CURSOR restaurantes_cursor IS
+    SELECT * FROM C##finnk.tab_listado_restaurante;
+BEGIN
+  NULL;
+END;
+
+--C3
+-- Cursor para obtener todos los empleados
+DECLARE
+  CURSOR empleados_cursor IS
+    SELECT * FROM C##finnk.tab_listado_empleados;
+BEGIN
+  NULL;
+END;
+
+--C4
+-- Cursor para obtener todos los reclamos
+DECLARE
+  CURSOR reclamos_cursor IS
+    SELECT * FROM C##finnk.tab_listado_reclamos;
+BEGIN
+  NULL;
+END;
+
+
+--C5
+-- Cursor para obtener todos los registros de comidas
+DECLARE
+  CURSOR comidas_cursor IS
+    SELECT * FROM C##finnk.tab_catalogo_comidas;
+BEGIN
+  NULL;
+END;
+
+
+--C6
+-- Cursor para obtener todos los registros de comidas DISPONIBLES
+DECLARE
+  CURSOR comida_disponible_cursor IS
+    SELECT * FROM C##finnk.tab_catalogo_comidas
+    WHERE existencias_comida > 0 AND estado_comida = 'Y';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_catalogo C##finnk.tab_catalogo_comidas.id_catalogo%TYPE;
+  v_imagen_comida C##finnk.tab_catalogo_comidas.imagen_comida%TYPE;
+  v_nombre_comida C##finnk.tab_catalogo_comidas.nombre_comida%TYPE;
+  v_precio_comida C##finnk.tab_catalogo_comidas.precio_comida%TYPE;
+  v_existencias_comida C##finnk.tab_catalogo_comidas.existencias_comida%TYPE;
+  v_estado_comida C##finnk.tab_catalogo_comidas.estado_comida%TYPE;
+BEGIN
+  OPEN comida_disponible_cursor;
+  
+  LOOP
+    FETCH comida_disponible_cursor INTO v_id_catalogo, v_imagen_comida, v_nombre_comida, v_precio_comida, v_existencias_comida, v_estado_comida;
+    
+    EXIT WHEN comida_disponible_cursor%NOTFOUND;
+    
+    -- Mostrar los datos directamente
+    DBMS_OUTPUT.PUT_LINE('ID: ' || v_id_catalogo || ', Nombre: ' || v_nombre_comida || ', Precio: ' || v_precio_comida || ', Existencias: ' || v_existencias_comida);
+  END LOOP;
+  
+  CLOSE comida_disponible_cursor;
+END;
+
+
+--C7
+-- Cursor para obtener todos los restaurantes DISPONIBLES
+DECLARE
+  CURSOR restaurantes_disponibles_cursor IS
+    SELECT * FROM C##finnk.tab_listado_restaurante
+    WHERE estado_restaurante = 'Y';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_restaurante C##finnk.tab_listado_restaurante.id_restaurante%TYPE;
+  v_localidad_restaurante C##finnk.tab_listado_restaurante.localidad_restaurante%TYPE;
+  v_estado_restaurante C##finnk.tab_listado_restaurante.estado_restaurante%TYPE;
+BEGIN
+  OPEN restaurantes_disponibles_cursor;
+  
+  LOOP
+    FETCH restaurantes_disponibles_cursor INTO v_id_restaurante, v_localidad_restaurante, v_estado_restaurante;
+    
+    EXIT WHEN restaurantes_disponibles_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los restaurantes disponibles
+    DBMS_OUTPUT.PUT_LINE('ID Restaurante: ' || v_id_restaurante || ', Localidad: ' || v_localidad_restaurante || ', Estado: ' || v_estado_restaurante);
+  END LOOP;
+  
+  CLOSE restaurantes_disponibles_cursor;
+END;
+
+
+--C8
+-- Cursor para obtener todos los empleados DISPONIBLES
+DECLARE
+  CURSOR empleados_disponibles_cursor IS
+    SELECT * FROM C##finnk.tab_listado_empleados
+    WHERE estado_empleado = 'Y';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_empleado C##finnk.tab_listado_empleados.id_empleado%TYPE;
+  v_nombre_empleado C##finnk.tab_listado_empleados.nombre_empleado%TYPE;
+  v_apellidos_empleado C##finnk.tab_listado_empleados.apellidos_empleado%TYPE;
+  v_correo_empleado C##finnk.tab_listado_empleados.correo_empleado%TYPE;
+  v_telefono_empleado C##finnk.tab_listado_empleados.telefono_empleado%TYPE;
+  v_salario_empleado C##finnk.tab_listado_empleados.salario_empleado%TYPE;
+  v_puesto_empleado C##finnk.tab_listado_empleados.puesto_empleado%TYPE;
+  v_nacionalidad_empleado C##finnk.tab_listado_empleados.nacionalidad_empleado%TYPE;
+  v_estado_empleado C##finnk.tab_listado_empleados.estado_empleado%TYPE;
+  v_fk_restaurante C##finnk.tab_listado_empleados.fk_restaurante%TYPE;
+BEGIN
+  OPEN empleados_disponibles_cursor;
+  
+  LOOP
+    FETCH empleados_disponibles_cursor INTO v_id_empleado, v_nombre_empleado, v_apellidos_empleado, v_correo_empleado, v_telefono_empleado, v_salario_empleado, v_puesto_empleado, v_nacionalidad_empleado, v_estado_empleado, v_fk_restaurante;
+    
+    EXIT WHEN empleados_disponibles_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los empleados disponibles
+    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel�fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
+  END LOOP;
+  
+  CLOSE empleados_disponibles_cursor;
+END;
+
+
+--C9
+-- Cursor para obtener todos los registros de comidas NO disponibles
+DECLARE
+  CURSOR comida_disponible_cursor IS
+    SELECT * FROM C##finnk.tab_catalogo_comidas
+    WHERE existencias_comida = 0 AND estado_comida = 'N';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_catalogo C##finnk.tab_catalogo_comidas.id_catalogo%TYPE;
+  v_imagen_comida C##finnk.tab_catalogo_comidas.imagen_comida%TYPE;
+  v_nombre_comida C##finnk.tab_catalogo_comidas.nombre_comida%TYPE;
+  v_precio_comida C##finnk.tab_catalogo_comidas.precio_comida%TYPE;
+  v_existencias_comida C##finnk.tab_catalogo_comidas.existencias_comida%TYPE;
+  v_estado_comida C##finnk.tab_catalogo_comidas.estado_comida%TYPE;
+BEGIN
+  OPEN comida_disponible_cursor;
+  
+  LOOP
+    FETCH comida_disponible_cursor INTO v_id_catalogo, v_imagen_comida, v_nombre_comida, v_precio_comida, v_existencias_comida, v_estado_comida;
+    
+    EXIT WHEN comida_disponible_cursor%NOTFOUND;
+    
+    -- Mostrar los datos directamente
+    DBMS_OUTPUT.PUT_LINE('ID: ' || v_id_catalogo || ', Nombre: ' || v_nombre_comida || ', Precio: ' || v_precio_comida || ', Existencias: ' || v_existencias_comida);
+  END LOOP;
+  
+  CLOSE comida_disponible_cursor;
+END;
+
+
+
+--C10
+-- Cursor para obtener todos los restaurantes NO disponibles
+DECLARE
+  CURSOR restaurantes_disponibles_cursor IS
+    SELECT * FROM C##finnk.tab_listado_restaurante
+    WHERE estado_restaurante = 'N';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_restaurante C##finnk.tab_listado_restaurante.id_restaurante%TYPE;
+  v_localidad_restaurante C##finnk.tab_listado_restaurante.localidad_restaurante%TYPE;
+  v_estado_restaurante C##finnk.tab_listado_restaurante.estado_restaurante%TYPE;
+BEGIN
+  OPEN restaurantes_disponibles_cursor;
+  
+  LOOP
+    FETCH restaurantes_disponibles_cursor INTO v_id_restaurante, v_localidad_restaurante, v_estado_restaurante;
+    
+    EXIT WHEN restaurantes_disponibles_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los restaurantes disponibles
+    DBMS_OUTPUT.PUT_LINE('ID Restaurante: ' || v_id_restaurante || ', Localidad: ' || v_localidad_restaurante || ', Estado: ' || v_estado_restaurante);
+  END LOOP;
+  
+  CLOSE restaurantes_disponibles_cursor;
+END;
+
+
+
+--C11
+-- Cursor para obtener todos los empleados NO disponibles
+DECLARE
+  CURSOR empleados_disponibles_cursor IS
+    SELECT * FROM C##finnk.tab_listado_empleados
+    WHERE estado_empleado = 'N';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_empleado C##finnk.tab_listado_empleados.id_empleado%TYPE;
+  v_nombre_empleado C##finnk.tab_listado_empleados.nombre_empleado%TYPE;
+  v_apellidos_empleado C##finnk.tab_listado_empleados.apellidos_empleado%TYPE;
+  v_correo_empleado C##finnk.tab_listado_empleados.correo_empleado%TYPE;
+  v_telefono_empleado C##finnk.tab_listado_empleados.telefono_empleado%TYPE;
+  v_salario_empleado C##finnk.tab_listado_empleados.salario_empleado%TYPE;
+  v_puesto_empleado C##finnk.tab_listado_empleados.puesto_empleado%TYPE;
+  v_nacionalidad_empleado C##finnk.tab_listado_empleados.nacionalidad_empleado%TYPE;
+  v_estado_empleado C##finnk.tab_listado_empleados.estado_empleado%TYPE;
+  v_fk_restaurante C##finnk.tab_listado_empleados.fk_restaurante%TYPE;
+BEGIN
+  OPEN empleados_disponibles_cursor;
+  
+  LOOP
+    FETCH empleados_disponibles_cursor INTO v_id_empleado, v_nombre_empleado, v_apellidos_empleado, v_correo_empleado, v_telefono_empleado, v_salario_empleado, v_puesto_empleado, v_nacionalidad_empleado, v_estado_empleado, v_fk_restaurante;
+    
+    EXIT WHEN empleados_disponibles_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los empleados disponibles
+    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel�fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
+  END LOOP;
+  
+  CLOSE empleados_disponibles_cursor;
+END;
+
+--C12
+-- Cursor para obtener todos los correos de los empleados
+DECLARE
+  CURSOR correos_empleados_cursor IS
+    SELECT correo_empleado FROM C##finnk.tab_listado_empleados;
+    
+  -- Variable para almacenar el correo del empleado
+  v_correo_empleado C##finnk.tab_listado_empleados.correo_empleado%TYPE;
+BEGIN
+  OPEN correos_empleados_cursor;
+  
+  LOOP
+    FETCH correos_empleados_cursor INTO v_correo_empleado;
+    
+    EXIT WHEN correos_empleados_cursor%NOTFOUND;
+    
+    -- Mostrar el correo del empleado
+    DBMS_OUTPUT.PUT_LINE('Correo: ' || v_correo_empleado);
+  END LOOP;
+  
+  CLOSE correos_empleados_cursor;
+END;
+
+
+--C13
+-- Cursor para obtener todos los Recomendados
+DECLARE
+  CURSOR recomendados_cursor IS
+    SELECT * FROM C##finnk.tab_catalogo_comidas
+    WHERE recomendado = 'Y';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_catalogo C##finnk.tab_catalogo_comidas.id_catalogo%TYPE;
+  v_imagen_comida C##finnk.tab_catalogo_comidas.imagen_comida%TYPE;
+  v_nombre_comida C##finnk.tab_catalogo_comidas.nombre_comida%TYPE;
+  v_precio_comida C##finnk.tab_catalogo_comidas.precio_comida%TYPE;
+  v_existencias_comida C##finnk.tab_catalogo_comidas.existencias_comida%TYPE;
+  v_estado_comida C##finnk.tab_catalogo_comidas.estado_comida%TYPE;
+BEGIN
+  OPEN recomendados_cursor;
+  
+  LOOP
+    FETCH recomendados_cursor INTO v_id_catalogo, v_imagen_comida, v_nombre_comida, v_precio_comida, v_existencias_comida, v_estado_comida;
+    
+    EXIT WHEN recomendados_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los elementos recomendados
+    DBMS_OUTPUT.PUT_LINE('ID: ' || v_id_catalogo || ', Nombre: ' || v_nombre_comida || ', Precio: ' || v_precio_comida || ', Existencias: ' || v_existencias_comida);
+  END LOOP;
+  
+  CLOSE recomendados_cursor;
+END;
+
+--C14
+-- Cursor para obtener todos los NO Recomendados
+DECLARE
+  CURSOR recomendados_cursor IS
+    SELECT * FROM C##finnk.tab_catalogo_comidas
+    WHERE recomendado = 'N';
+    
+  -- Variables para almacenar los datos del cursor
+  v_id_catalogo C##finnk.tab_catalogo_comidas.id_catalogo%TYPE;
+  v_imagen_comida C##finnk.tab_catalogo_comidas.imagen_comida%TYPE;
+  v_nombre_comida C##finnk.tab_catalogo_comidas.nombre_comida%TYPE;
+  v_precio_comida C##finnk.tab_catalogo_comidas.precio_comida%TYPE;
+  v_existencias_comida C##finnk.tab_catalogo_comidas.existencias_comida%TYPE;
+  v_estado_comida C##finnk.tab_catalogo_comidas.estado_comida%TYPE;
+BEGIN
+  OPEN recomendados_cursor;
+  
+  LOOP
+    FETCH recomendados_cursor INTO v_id_catalogo, v_imagen_comida, v_nombre_comida, v_precio_comida, v_existencias_comida, v_estado_comida;
+    
+    EXIT WHEN recomendados_cursor%NOTFOUND;
+    
+    -- Mostrar los datos de los elementos recomendados
+    DBMS_OUTPUT.PUT_LINE('ID: ' || v_id_catalogo || ', Nombre: ' || v_nombre_comida || ', Precio: ' || v_precio_comida || ', Existencias: ' || v_existencias_comida);
+  END LOOP;
+  
+  CLOSE recomendados_cursor;
+END;
+
+--C15
+-- Cursor para obtener todos los correos de los clientes
+DECLARE
+  CURSOR clientes_correo_cursor IS
+    SELECT correco_cliente FROM C##finnk.tab_listado_clientes;
+    
+  -- Variable para almacenar el correo del cliente
+  v_correo_cliente C##finnk.tab_listado_clientes.correco_cliente%TYPE;
+BEGIN
+  OPEN clientes_correo_cursor;
+  
+  LOOP
+    FETCH clientes_correo_cursor INTO v_correo_cliente;
+    
+    EXIT WHEN clientes_correo_cursor%NOTFOUND;
+    
+    -- Mostrar el correo del cliente
+    DBMS_OUTPUT.PUT_LINE('Correo: ' || v_correo_cliente);
+  END LOOP;
+  
+  CLOSE clientes_correo_cursor;
+END;
