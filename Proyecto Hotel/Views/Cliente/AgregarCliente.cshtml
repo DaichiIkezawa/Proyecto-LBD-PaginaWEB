@@ -1,0 +1,28 @@
+﻿@model test_2.Models.Cliente
+
+@{
+    ViewData["Title"] = "Cliente";
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalles del Cliente</title>
+</head>
+<body>
+    <h2>Detalles del Cliente</h2>
+    @if (Model != null)
+    {
+        <table>
+            <tr>
+                <td>Correo Cliente:</td>
+                <td>@Model.CorreoCliente</td>
+            </tr>
+            <!-- Agrega más filas para mostrar más detalles del cliente si es necesario -->
+        </table>
+    }
+    else
+    {
+        <p>@ViewBag.Error</p>
+    }
+</body>
+</html>

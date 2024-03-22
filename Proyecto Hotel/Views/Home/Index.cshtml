@@ -1,0 +1,50 @@
+﻿@model test_2.Models.Cliente
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+
+
+<h2>Agregar Cliente</h2>
+
+@if (ViewBag.Mensaje != null)
+{
+    <div class="alert alert-success">@ViewBag.Mensaje</div>
+}
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<form action="@Url.Action("Index", "Home")" method="post">
+    <label>Correo Cliente:</label>
+    <input type="text" name="correoCliente" required />
+    <button type="submit">Agregar Cliente</button>
+</form>
+
+
+<div class="text-center">
+    <h2>Detalles del Cliente</h2>
+    @if (Model != null)
+    {
+        <table>
+            <tr>
+                <td>Correo Cliente:</td>
+                <td>@Model.CorreoCliente</td>
+            </tr>
+        </table>
+    }
+    else
+    {
+        <h5>no paso</h5>
+        <p>@ViewBag.Error</p>
+    }
+</div>
