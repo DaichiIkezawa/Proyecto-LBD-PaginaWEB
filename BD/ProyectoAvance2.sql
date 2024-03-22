@@ -1743,3 +1743,100 @@ create or replace package body c##finnk.pkg_gestion_restaurantes_localidades as
         close c_restaurantes;
     end seleccionarrestaurantes;
 end pkg_gestion_restaurantes_localidades;
+
+
+--5 TRIGGERS*****************************************************************************************************************************
+
+--T1
+-- Este trigger lo que hace es que se dispara cada vez que se hace un insert, update o un delete de la tabla tab_listado_clientes para auditarlo}
+--DROP TRIGGER trg_audit_clientes;
+CREATE OR REPLACE TRIGGER trg_audit_clientes
+AFTER INSERT OR UPDATE OR DELETE ON C##finnk.tab_listado_clientes
+FOR EACH ROW
+DECLARE
+    v_operation VARCHAR2(10);
+BEGIN
+    IF INSERTING THEN
+        v_operation := 'INSERT';
+    ELSIF UPDATING THEN
+        v_operation := 'UPDATE';
+    ELSIF DELETING THEN
+        v_operation := 'DELETE';
+    END IF;
+
+    INSERT INTO audit_tab_listado_clientes (id_cliente, operation_type, operation_time)
+    VALUES (:NEW.id_cliente, v_operation, SYSTIMESTAMP);
+END;
+
+--T2
+--Calcula el total de ventas cada vez quye se ingresa una nueva
+--DROP TRIGGER trg_actualizar_total_ventas;
+CREATE OR REPLACE TRIGGER trg_actualizar_total_ventas
+AFTER INSERT ON tabla_ventas_relacionada
+FOR EACH ROW
+DECLARE
+    v_restaurante_id NUMBER;
+BEGIN
+    v_restaurante_id := :NEW.restaurante_id;
+    UPDATE tab_listado_restaurante
+    SET total_ventas = total_ventas + :NEW.monto_venta
+    WHERE id_restaurante = v_restaurante_id;
+END;
+/
+
+--T3
+--Llevar el control de los reclamos cada vez que se modifique
+--DROP TRIGGER trg_registro_cambios_reclamos;
+CREATE OR REPLACE TRIGGER trg_registro_cambios_reclamos
+AFTER INSERT OR UPDATE OR DELETE ON tab_listado_reclamos
+FOR EACH ROW
+DECLARE
+    v_operation VARCHAR2(10);
+BEGIN
+    IF INSERTING THEN
+        v_operation := 'INSERT';
+    ELSIF UPDATING THEN
+        v_operation := 'UPDATE';
+    ELSIF DELETING THEN
+        v_operation := 'DELETE';
+    END IF;
+
+    INSERT INTO registro_cambios_reclamos (id_reclamo, operacion, fecha)
+    VALUES (:NEW.id_reclamos, v_operation, SYSDATE);
+END;
+/
+
+--T4
+--Verifica si el salario de los empleados estan dentro de lo "normal" de la empresa, agregando un rango de ?450,000 a ?550,000
+CREATE OR REPLACE TRIGGER trg_validar_salario_empleado
+BEFORE INSERT OR UPDATE ON tab_listado_empleados
+FOR EACH ROW
+DECLARE
+    v_salario_minimo NUMBER := 450000; 
+    v_salario_maximo NUMBER := 550000; 
+BEGIN
+    IF :NEW.salario_empleado < v_salario_minimo OR :NEW.salario_empleado > v_salario_maximo THEN
+        RAISE_APPLICATION_ERROR(-20001, 'El salario debe estar dentro del rango de ' || v_salario_minimo || ' a ' || v_salario_maximo);
+    END IF;
+END;
+/
+
+--T5
+--Si el restaurante cambia de estado a "cerrado" verifica si hay empleados activos antes de cambiar a ese estado
+CREATE OR REPLACE TRIGGER trg_verificar_empleados_activos
+BEFORE UPDATE OF estado_restaurante ON tab_listado_restaurante
+FOR EACH ROW
+DECLARE
+    v_numero_empleados NUMBER;
+BEGIN
+    IF :NEW.estado_restaurante = 'N' THEN
+        SELECT COUNT(*) INTO v_numero_empleados
+        FROM tab_listado_empleados
+        WHERE fk_restaurante = :NEW.id_restaurante AND estado_empleado = 'Y';
+        
+        IF v_numero_empleados > 0 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'No se puede cerrar el restaurante debido a que tiene empleados activos.');
+        END IF;
+    END IF;
+END;
+/
