@@ -689,3 +689,1057 @@ WHERE
 estado_empleado = 'Y';
 
 SELECT * FROM C##finnk.Vista_Empleados_True;
+
+
+
+--15 FUNCIONES Sebastian*****************************************************************************************************************************
+
+--F1
+--calcular el salario total que se ocupa pagar por restaurante
+create or replace function C##finnk.calcular_salario_total(restaurante_id in number) return number is
+total_salario number :=0;
+begin
+    select sum(salario_empleado)
+    into total_salario
+    from c##finnk.tab_listado_empleados
+    where fk_restaurante = restaurante_id;
+    
+    return total_salario;
+
+exception
+    when NO_DATA_FOUND then
+        return  0;   
+
+end;
+
+select * from tab_listado_empleados;
+
+--para correr la funcion
+set serveroutput on;
+declare
+    salario_total number;
+begin
+    salario_total :=calcular_salario_total(restaurante_id=>1);
+    DBMS_OUTPUT.PUT_LINE('Salario total del restaurante: ' || salario_total);
+end;
+
+
+
+--F2
+--funcion para obtener el promedio de ventas diarias por restaurante
+create or replace function calcular_promedio_ventas_diarias(restaurante_id in number) return number is
+    total_ventas number:= 0;
+    total_dias number := 0;
+    promedio_ventas_diarias number:=0;
+begin
+    select sum(monto_venta), count(distinct fecha_venta)
+    into total_ventas, total_dias
+    from c##finnk.tabla_ventas_relacionada
+    where restaurante_id = restaurante_id;
+    
+    if total_dias > 0then
+        promedio_ventas_diarias:= total_ventas /total_dias;
+    end if;
+    return promedio_ventas_diarias;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+
+declare 
+    promedio_ventas number;
+begin
+    promedio_ventas:= calcular_promedio_ventas_diarias(restaurante_id => 1);
+    DBMS_OUTPUT.PUT_LINE('El promedio diario de ventas es: ' ||promedio_ventas);
+end;
+
+
+--F3
+--Función para identificar los empleados que superan un cierto salario 
+create or replace function empleados_salario_superior(
+    restaurante_id in number,
+    salario_minimo in number
+)return SYS_REFCURSOR as 
+    employees_cursor SYS_REFCURSOR;
+begin 
+    open empleados_cursor for
+        select nombre_empleado, apellidos_empleado, salario_empleado
+        from c##finnk.tab_listado_empleados
+        where fk_restaurante = restaurante_id
+        and salario_empleado>salario_minimo;
+        
+    return empleados_cursor;
+end;
+
+--para correrlo
+declare 
+    empleados_cursor SYS_REFCURSOR;
+    nombre_empleado varchar2(40);
+    apellidos_empleado varchar2(40);
+    salario_empleado number;
+begin
+    empleados_cursor := empleados_superan_salario(restaurante_id => 1, salario_minimo => 2000); -- Ejemplo de llamada a la función con restaurante_id y salario_minimo específicos
+
+    loop
+        fetch empleados_cursor into nombre_empleado, apellidos_empleado, salario_empleado;
+        exit when empleados_cursor%NOTFOUND;
+        dbms_output.put_line('Nombre: ' || nombre_empleado || ', Apellidos: ' || apellidos_empleado || ', Salario: ' || salario_empleado);
+    end loop;
+end;
+
+
+--F4
+--Para obtener numero de reclamos por empleado
+create or replace function cant_reclamos_empleado (empleado_id in number)
+return number is
+    total_reclamos number;
+begin
+    select count(*)
+    into total_reclamos
+    from c##finnk.tab_listado_reclamos
+    where fk_empleado = empleado_id;
+    
+    return total_reclamos;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo 
+declare
+    total number;
+begin
+    total:= cant_reclamos_empleado(1);
+    DBMS_OUTPUT.PUT_LINE('Total reclamos del empleado: ' ||total);
+end;
+
+
+--F5
+--para calcular total de ventas por empleado en un restaurante
+create or replace function total_ventas_por_empleado(
+    restaurante_id in number,
+    empleado_id in number
+)return number is total_ventas number:=0;
+begin
+    select sum(monto_venta)
+    into total_ventas
+    from c##finnk.tabla_ventas_relacionada
+    where restaurante_id = restaurante_id
+    and fecha_venta between TRUNC(SYSDATE) -30 and TRUNC(SYSDATE) --en los ultimos 30 dias
+    and fk_empleado = empleado_id;
+    
+    return total_ventas
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    total_ventas NUMBER;
+begin
+    total_ventas := total_ventas_por_empleado(restaurante_id => 1, empleado_id => 1); -- Ejemplo de llamada a la función con restaurante_id y empleado_id específicos
+    DBMS_OUTPUT.PUT_LINE('Total de ventas del empleado en el restaurante en los ultimos 30 dias: ' || total_ventas);
+end;
+
+--F6
+--Función para calcular el total de ventas por restaurante
+create or replace function total_ventas_por_restaurante(restaurante_id in number)
+return number is
+    total_ventas number :=0;
+begin 
+    select sum(monto_venta)
+    into total_ventas
+    from c##finnk.tabla_ventas_relacionada
+    where restaurante_id = restaurante_id;
+    
+    return total_ventas;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end
+
+--para correrlo
+declare
+    total_ventas NUMBER;
+begin
+    total_ventas := total_ventas_por_restaurante(1);
+    DBMS_OUTPUT.PUT_LINE('Total de ventas para el restaurante: ' || total_ventas);
+end;
+
+
+--F7
+--Función para obtener el salario más bajo entre todos los empleados de un restaurante
+create or replace salario_mas_bajo_restaurante(restaurante_id in number)
+return number is
+    salario_minimo number;
+begin
+    select min(salario_empleado)
+    into salario_minimo
+    from c##finnk.tab_listado_empleados
+    where fk_restaurante = restaurante_id;
+    
+    return salario_minimo;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    salario_minimo NUMBER;
+begin
+    salario_minimo := salario_mas_bajo_restaurante(1);
+    DBMS_OUTPUT.PUT_LINE('Salario más bajo para el restaurante es: ' || salario_minimo);
+end;
+
+--F8
+--Función para obtener la cantidad de existencias de un tipo específico de comida en un restaurante
+create or replace function obtener_existencias_comida(
+    p_id_restaurante in number,
+    p_id_comida in number)
+return number is 
+    v_existencias number;
+begin
+    select existencias into v_existencias
+    from c##finnk.tab_inventario_restaurante
+    where id_restaurante = p_id_restaurante and id_catalogo = p_id_comida;
+    
+    return v_existencias;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+   
+end;
+
+
+--para correrlo
+declare
+    v_existencias NUMBER;
+begin
+    v_existencias := obtener_existencias_comida(1, 2);
+    DBMS_OUTPUT.PUT_LINE('Existencias de la comida  en el restaurante: ' || v_existencias);
+end;
+
+--F9
+--Función para encontrar el cliente que más reclamos ha hecho
+create or replace function cliente_con_mas_reclamos
+return varchar2 is
+    cliente_con_mas_reclamos varchar2(50)
+begin
+    select nombre_cliente
+    into cliente_con_mas_reclamos
+    from(
+        select c.nombre_cliente, count(r.id_reclamos) as total_reclamos
+        from c##finnk.tab_listado_clientes c
+        join c##finnk.tab_listado_reclamos r on c.id_cliente = r.fk_reclamos
+        group by c.nombre_cliente
+        order by count(r.id_reclamos) desc
+    )
+    where ROWNUM = 1;
+    return cliente_con_mas_reclamos;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    cliente_con_mas_reclamos VARCHAR2(50);
+begin
+    cliente_con_mas_reclamos := cliente_con_mas_reclamos();
+    DBMS_OUTPUT.PUT_LINE('Cliente con más reclamos: ' || cliente_con_mas_reclamos);
+end;
+
+
+--F10
+--Función para encontrar el empleado con más reclamos en un restaurante
+create or replace function empleado_mas_reclamos(restaurante_id in number)
+return varchar2 is
+    nombre_empleado_mas_reclamos varchar2(50);
+begin
+    select e.nombre_empleado || ' ' ||e.apellidos_empleado into nombre_empleado_mas_reclamos
+    from c##finnk.tab_listado_empleados e
+    join c##finnk.tab_listado_reclamos r on e.id_empleado = r.fk_empleado
+    where e.fk_restaurante = restaurante_id
+    group by e.nombre_empleado, e.apellidos_empleado
+    order by count(r.id_reclamos) desc
+    fetch first 1 row only;
+    
+    return nombre_empleado_mas_reclamos;
+    
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    empleado VARCHAR2(50);
+begin
+    empleado := empleado_con_mas_reclamos(1); 
+    DBMS_OUTPUT.PUT_LINE('Empleado con más reclamos: ' || empleado);
+end;
+
+--F11
+--Función para encontrar el empleado más reciente contratado en un restaurante
+create or replace function empleado_reciente(restaurante_id in number)
+return varchar2 is 
+    nombre_empleado_reciente varchar2(50);
+begin
+    select nombre_empleado || ' ' || aellidos_empleado into nombre_empleado_reciente
+    from c##finnk.tab_listado_empleados
+    where fk_restaurante= restaurante_id
+    order by id_empleado desc
+    fetch first 1 row only;
+    
+    return nombre_empleado_reciente;
+    
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    empleado_reciente VARCHAR2(50);
+begin
+    empleado_reciente := empleado_mas_reciente_sin_fecha(1); 
+    DBMS_OUTPUT.PUT_LINE('Empleado más reciente: ' || empleado_reciente);
+end;
+
+
+--F12
+--Función para calcular el total de ventas en un restaurante en un día específico
+create or replace function ventas_restaurante_diaria(
+    restaurante_id in number,
+    fecha_venta_in in date
+)return number is
+    total_ventas_dia number:=0;
+begin
+    select sum(monto_venta)
+    into total_ventas_dia
+    from c##finnk.tabla_ventas_relacionada
+    where restaurante_id = restaurante_id
+    and trunc(fecha_venta) = trunc(fecha_venta_in);
+    
+    return total_ventas_id;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;
+
+--para correrlo
+declare
+    total NUMBER;
+begin
+    total := ventas_restaurante_dia(1, TO_DATE('2024-03-20', 'YYYY-MM-DD'));
+    DBMS_OUTPUT.PUT_LINE('Total de ventas: ' || total);
+end;
+
+--F13
+--Función para obtener el total de reclamos recibidos en el último mes
+create or replace function reclamos_ultimo_mes()
+return number is
+    total_reclamos number;
+begin
+    select count(*)
+    into total_reclamos
+    from c##finnk.tab_listado_reclamos
+    where fecha_reclamo>= trunc(SYSDATE, 'MM') -INTERVAL '1' MONTH
+    and fecha_reclamo < trunc(SYSDATE, 'MM');
+    
+    return total_reclamos;
+ exception
+    when NO_DATA_FOUND then
+        return 0;
+end;   
+    
+--para correrlo
+declare
+    total_reclamos NUMBER;
+begin
+    total_reclamos := total_reclamos_ultimo_mes();
+    DBMS_OUTPUT.PUT_LINE('Total de reclamos en el último mes: ' || total_reclamos);
+end;
+
+
+--F14
+--Función para determinar el restaurante con el menor número de ventas en un dia específico
+create or replace function restaurante_menor_ventas(fecha_consulta date)
+return varchar2 is 
+    nombre_restaurante_con_menor_ventas varchar2(100);
+    ventas_minimas number:=999999999;
+begin
+    for registro in(
+        select r.localidad_restaurante, sum(v.monto_venta) as total_ventas
+        from c##finnk.tab_listado_restaurante r
+        left join c##finnk.tabla_ventas_relacionada v on r.id_restaurante = v.restaurante_id
+        where v.fecha_venta = fecha_consulta
+        group by r.localidad_restaurante
+        order by total_ventas ASC
+        
+    )loop
+        if registro.total_ventas<ventas_minimas then 
+            ventas_minimas := registro.total_ventas;
+            nombre_restaurante_con_menor_ventas := registro.localidad_restaurante;
+        end if;
+        exit;
+    end loop;
+    return nombre_restaurante_con_menor_ventas
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;   
+
+--para correrlo
+declare
+    resultado VARCHAR2(100);
+begin
+    resultado := restaurante_menor_ventas(TO_DATE('2024-03-20', 'YYYY-MM-DD'));
+    DBMS_OUTPUT.PUT_LINE('El restaurante con el menor número de ventas en la fecha dada es: ' || resultado);
+end;
+
+
+--F15
+--Función para determinar el promedio de precios de las comidas
+create or replace function promedio_precios_comidas()
+return number is
+    promedio_precios number;
+begin
+    select avg(precio_comida)
+    into promedio_percios
+    from c##finnk.tab_catalogo_comidas;
+    
+    return promedio_precios;
+exception
+    when NO_DATA_FOUND then
+        return 0;
+end;  
+
+--para correrlo
+declare
+    promedio NUMBER;
+begin
+    promedio := promedio_precios_comidas();
+    DBMS_OUTPUT.PUT_LINE('El promedio de precios de las comidas es: ' || promedio);
+end;
+
+--10 PAQUETES Sebastian*****************************************************************************************************************************
+
+--Paquete1
+--gestion de clientes: creacion, actualizacion y eliminar clientes
+
+create or replace package pkg_gestion_clientes as
+    procedure InsertarCliente(
+        p_id_cliente in tab_listado_clientes.id_cliente%TYPE,
+        p_correo_cliente in tab_listado_clientes.correo_cliente%TYPE
+    );
+    
+    procedure actualizar(
+        p_id_cliente in tab_listado_clientes.id_cliente%TYPE,
+        p_correo_cliente in tab_listado_clientes.correo_cliente%type
+    );
+
+    procedure eliminar(
+        p_id_cliente in tab_listado_clientes.id_cliente%type
+    );
+end pkg_gestion_clientes;
+
+create or replace package body pkg_gestion_clientes as
+    procedure InsertarCliente(
+        p_id_cliente in tab_listado_clientes.id_cliente%TYPE,
+        p_correo_cliente in tab_listado_clientes.correo_cliente%TYPE
+    ) is
+    begin
+        insert into tab_listado_clientes (id_cliente, correo_cliente)
+        values (p_id_cliente, p_correo_cliente);
+    end InsertarCliente;
+    
+    procedure actualizar(
+        p_id_cliente in tab_listado_clientes.id_cliente%TYPE,
+        p_correo_cliente in tab_listado_clientes.correo_cliente%TYPE
+    ) is
+    begin
+        update tab_listado_clientes
+        set correo_cliente = p_correo_cliente
+        where id_cliente = p_id_cliente;
+    end actualizar;
+
+    procedure eliminar(
+        p_id_cliente in tab_listado_clientes.id_cliente%TYPE
+    ) is
+    begin
+        delete from tab_listado_clientes
+        where id_cliente = p_id_cliente;
+    end eliminar;
+end pkg_gestion_clientes;
+
+
+
+--Paquete 2
+--gestion comidas
+create or replace package c##finnk.pkg_gestion_comidas as
+
+    procedure actualizarExistenciasComida(
+        p_id_catalogo IN C##finnk.tab_catalogo_comidas.id_catalogo%TYPE,
+        p_existencias_comida IN C##finnk.tab_catalogo_comidas.existencias_comida%TYPE
+    );
+    
+    procedure ObtenerComidasAgotadas;
+    
+    procedure ObtenerComidaDisponibles;
+end pkg_gestion_comidas;
+
+create or replace package body c##finnk.pkg_gestion_comidas as
+
+    procedure actualizarExistenciasComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type,
+        p_existencias_comida in c##finnk.tab_catalogo_comidas.existencias_comida%type
+    ) is
+    begin
+        update c##finnk.tab_catalogo_comidas
+        set existencias_comida = p_existencias_comida
+        where id_catalogo = p_id_catalogo;
+        commit;
+    end actualizarExistenciasComida;
+    
+    procedure obtenerComidasAgotadas is
+        v_comida c##finnk.tab_catalogo_comidas%rowtype;
+    begin
+        select *
+        into v_comida
+        from c##finnk.tab_catalogo_comidas
+        where existencias_comida = 0;
+        
+        dbms_output.put_line('ID_Catalogo: ' || v_comida.id_catalogo);
+        dbms_output.put_line('Imagen_Comida: ' || v_comida.imagen_comida);
+       
+    end obtenerComidasAgotadas;
+    
+    procedure obtenerComidaDisponibles is
+        cursor c_comidas is
+            select id_catalogo, imagen_comida
+            from c##finnk.tab_catalogo_comidas
+            where existencias_comida > 0;
+        
+        v_id_catalogo c##finnk.tab_catalogo_comidas.id_catalogo%type;
+        v_imagen_comida c##finnk.tab_catalogo_comidas.imagen_comida%type;
+    begin
+        open c_comidas;
+        loop
+            fetch c_comidas into v_id_catalogo, v_imagen_comida;
+            exit when c_comidas%notfound;
+            
+            dbms_output.put_line('ID_Catalogo: ' || v_id_catalogo);
+            dbms_output.put_line('Imagen_Comida: ' || v_imagen_comida);
+        end loop;
+        close c_comidas;
+    end obtenerComidaDisponibles;
+end pkg_gestion_comidas;
+
+--Paquete 3
+--Paquete de Procedimientos de Contar
+create or replace package c##finnk.pkg_contar as
+
+    procedure contarClientes;
+    
+    procedure contarRestaurantesActivos;
+end pkg_contar;
+
+create or replace package body c##finnk.pkg_contar as
+
+    procedure contarclientes is
+        v_total_clientes number;
+    begin
+        select count(*) into v_total_clientes
+        from c##finnk.tab_listado_clientes;
+
+        dbms_output.put_line('Total de clientes: ' || v_total_clientes);
+    end contarclientes;
+
+    procedure contarrestaurantesactivos is
+        v_total_activos number;
+    begin
+        select count(*) into v_total_activos
+        from c##finnk.tab_listado_restaurante
+        where estado_restaurante = 'Y';
+
+        dbms_output.put_line('Total de restaurantes activos: ' || v_total_activos);
+    end contarrestaurantesactivos;
+
+end pkg_contar;
+
+--Paquete 4
+--paquete procedimientos de seleccionar
+
+create or replace package c##finnk.pkg_seleccion_datos as
+    procedure seleccionarRestaurantes;
+    
+    procedure seleccionarClientes;
+end pkg_seleccion_datos;
+
+create or replace package body c##finnk.pkg_seleccion_datos as
+
+    procedure seleccionarrestaurantes is
+        type restaurantescursortype is ref cursor;
+        restaurantes_cursor restaurantescursortype;
+        v_id_restaurante c##finnk.tab_listado_restaurante.id_restaurante%type;
+        v_localidad_restaurante c##finnk.tab_listado_restaurante.localidad_restaurante%type;
+        v_estado_restaurante c##finnk.tab_listado_restaurante.estado_restaurante%type;
+    begin
+        open restaurantes_cursor for
+        select id_restaurante, localidad_restaurante, estado_restaurante
+        from c##finnk.tab_listado_restaurante;
+
+        loop
+            fetch restaurantes_cursor into v_id_restaurante, v_localidad_restaurante, v_estado_restaurante;
+            exit when restaurantes_cursor%notfound;
+            dbms_output.put_line('id restaurante: ' || v_id_restaurante || ', localidad: ' || v_localidad_restaurante || ', estado: ' || v_estado_restaurante);
+        end loop;
+
+        close restaurantes_cursor;
+    end seleccionarrestaurantes;
+
+    procedure seleccionarclientes is
+        type clientesCursorType is ref cursor;
+        clientes_cursor clientesCursorType;
+        v_id_cliente c##finnk.tab_listado_clientes.id_cliente%type;
+        v_correo_cliente c##finnk.tab_listado_clientes.correo_cliente%type;
+    begin
+        open clientes_cursor for
+        select id_cliente, correo_cliente
+        from c##finnk.tab_listado_clientes;
+
+        loop
+            fetch clientes_cursor into v_id_cliente, v_correo_cliente;
+            exit when clientes_cursor%notfound;
+            dbms_output.put_line('id cliente: ' || v_id_cliente || ', correo cliente: ' || v_correo_cliente);
+        end loop;
+
+        close clientes_cursor;
+    end seleccionarclientes;
+
+end pkg_seleccion_datos;
+
+
+--Paquete 5
+--Paquete procedimientos eliminar
+
+create or replace package c##finnk.pkg_eliminar as
+    procedure kEliminarReclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type
+    );
+    procedure eliminarComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type
+    );
+end pkg_eliminar;    
+
+create or replace package body c##finnk.pkg_eliminar as
+
+    procedure keliminarreclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type
+    ) as
+    begin
+        delete from c##finnk.tab_listado_reclamos
+        where id_reclamos = p_id_reclamo;
+        commit;
+    end keliminarreclamo;
+
+    procedure eliminarcomida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type
+    ) as
+    begin
+        delete from c##finnk.tab_catalogo_comidas
+        where id_catalogo = p_id_catalogo;
+        commit;
+    end eliminarcomida;
+
+end pkg_eliminar;
+
+--Paquete 6
+--paquete funciones obtener
+create or replace package c##finnk.pkg_obtener_datos as
+    procedure obtenernumerorestaurantesporlocalidad(
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_numero_restaurantes out number
+    );
+
+    procedure obtenerempleadosporrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type
+    );
+
+    procedure obtenertotalreclamos(
+        p_total_reclamos out number
+    );
+
+    procedure obtenernumeroempleadosportienda(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_numero_empleados out number
+    );
+
+    procedure obtenerclientesporcorreo(
+        p_correo_cliente in varchar2
+    );
+end pkg_obtener_datos;
+
+create or replace package body c##finnk.pkg_obtener_datos as
+
+    procedure obtenernumerorestaurantesporlocalidad(
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_numero_restaurantes out number
+    ) as
+    begin
+        select count(*)
+        into p_numero_restaurantes
+        from c##finnk.tab_listado_restaurante
+        where localidad_restaurante = p_localidad_restaurante;
+    end obtenernumerorestaurantesporlocalidad;
+
+    procedure obtenerempleadosporrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type
+    ) as
+    begin
+        for r in (select *
+                  from c##finnk.tab_listado_empleados
+                  where fk_restaurante = p_id_restaurante) loop
+            dbms_output.put_line('empleado: ' || r.nombre_empleado || ', id: ' || r.id_empleado);
+        end loop;
+    end obtenerempleadosporrestaurante;
+
+    procedure obtenertotalreclamos(
+        p_total_reclamos out number
+    ) as
+    begin
+        select count(*)
+        into p_total_reclamos
+        from c##finnk.tab_listado_reclamos;
+    end obtenertotalreclamos;
+
+    procedure obtenernumeroempleadosportienda(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_numero_empleados out number
+    ) as
+    begin
+        select count(*)
+        into p_numero_empleados
+        from c##finnk.tab_listado_empleados
+        where fk_restaurante = p_id_restaurante;
+    end obtenernumeroempleadosportienda;
+
+    procedure obtenerclientesporcorreo(
+        p_correo_cliente in varchar2
+    ) as
+        v_cliente c##finnk.tab_listado_clientes%rowtype;
+    begin
+        select *
+        into v_cliente
+        from c##finnk.tab_listado_clientes
+        where correo_cliente = p_correo_cliente;
+        
+        dbms_output.put_line('id_cliente: ' || v_cliente.id_cliente || ', correo_cliente: ' || v_cliente.correo_cliente);    
+    end obtenerclientesporcorreo;
+
+end pkg_obtener_datos;
+
+--Paquete 7
+--Paquete actualizar datos
+create or replace package c##finnk.pkg_actualizar_datos as
+    procedure actualizarSalarioEmpleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_salario_empleado in c##finnk.tab_listado_empleados.salario_empleado%type
+    );
+
+    procedure actualizarNombreEmpleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_nombre_empleado in c##finnk.tab_listado_empleados.nombre_empleado%type
+    );
+
+    procedure actualizarPrecioComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type,
+        p_precio_comida in c##finnk.tab_catalogo_comidas.precio_comida%type
+    );
+
+    procedure actualizarExistenciasComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type,
+        p_existencias_comida in c##finnk.tab_catalogo_comidas.existencias_comida%type
+    );
+end pkg_actualizar_datos;
+
+create or replace package body c##finnk.pkg_actualizar_datos as
+    procedure actualizarSalarioEmpleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_salario_empleado in c##finnk.tab_listado_empleados.salario_empleado%type
+    ) as
+    begin
+        update c##finnk.tab_listado_empleados
+        set salario_empleado = p_salario_empleado
+        where id_empleado = p_id_empleado;
+        commit;
+    end actualizarSalarioEmpleado;
+
+    procedure actualizarNombreEmpleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_nombre_empleado in c##finnk.tab_listado_empleados.nombre_empleado%type
+    ) as
+    begin
+        update c##finnk.tab_listado_empleados
+        set nombre_empleado = p_nombre_empleado
+        where id_empleado = p_id_empleado;
+        commit;
+    end actualizarNombreEmpleado;
+
+    procedure actualizarPrecioComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type,
+        p_precio_comida in c##finnk.tab_catalogo_comidas.precio_comida%type
+    ) as
+    begin
+        update c##finnk.tab_catalogo_comidas
+        set precio_comida = p_precio_comida
+        where id_catalogo = p_id_catalogo;
+        commit;
+    end actualizarPrecioComida;
+
+    procedure actualizarExistenciasComida(
+        p_id_catalogo in c##finnk.tab_catalogo_comidas.id_catalogo%type,
+        p_existencias_comida in c##finnk.tab_catalogo_comidas.existencias_comida%type
+    ) as
+    begin
+        update c##finnk.tab_catalogo_comidas
+        set existencias_comida = p_existencias_comida
+        where id_catalogo = p_id_catalogo;
+        commit;
+    end actualizarExistenciasComida;
+
+end pkg_actualizar_datos;
+
+--Paquete 8
+--Paquete gestion de reclamos
+
+create or replace package c##finnk.pkg_gestion_reclamos as
+    procedure keliminarreclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type
+    );
+    procedure obtenertotalreclamos(
+        p_total_reclamos out number
+    );
+    procedure insertarreclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type,
+        p_nombre_reclamo in c##finnk.tab_listado_reclamos.nombre_reclamo%type,
+        p_comentario_reclamo in c##finnk.tab_listado_reclamos.comentario_reclamo%type
+    );
+end pkg_gestion_reclamos;
+
+create or replace package body c##finnk.pkg_gestion_reclamos as
+    procedure keliminarreclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type
+    ) as
+    begin
+        delete from c##finnk.tab_listado_reclamos
+        where id_reclamos = p_id_reclamo;
+        commit;
+    end keliminarreclamo;
+
+    procedure obtenertotalreclamos(
+        p_total_reclamos out number
+    ) as
+    begin
+        select count(*)
+        into p_total_reclamos
+        from c##finnk.tab_listado_reclamos;
+    end obtenertotalreclamos;
+
+    procedure insertarreclamo(
+        p_id_reclamo in c##finnk.tab_listado_reclamos.id_reclamos%type,
+        p_nombre_reclamo in c##finnk.tab_listado_reclamos.nombre_reclamo%type,
+        p_comentario_reclamo in c##finnk.tab_listado_reclamos.comentario_reclamo%type
+    ) as
+    begin
+        insert into c##finnk.tab_listado_reclamos(id_reclamos, nombre_reclamo, comentario_reclamo)
+        values (p_id_reclamo, p_nombre_reclamo, p_comentario_reclamo);
+        commit;
+    end insertarreclamo;
+end pkg_gestion_reclamos;
+
+--Paquete 9
+--Paquete gestion empleados
+
+create or replace package c##finnk.pkg_gestion_empleados as
+    procedure obtenerempleadosporrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type
+    );
+  
+    procedure actualizarsalarioempleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_salario_empleado in c##finnk.tab_listado_empleados.salario_empleado%type   
+    );
+
+    procedure obtenerempleadosporsalariomaximo;
+
+    procedure obtenerempleadosporsalariominimo;
+
+    procedure actualizarnombreempleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_nombre_empleado in c##finnk.tab_listado_empleados.nombre_empleado%type
+    );
+
+    procedure obtenernumeroempleadosportienda(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_numero_empleados out number
+    );
+end pkg_gestion_empleados;
+
+create or replace package body c##finnk.pkg_gestion_empleados as
+
+    procedure obtenerempleadosporrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type
+    ) as
+    begin
+        for emp in (
+        select *
+        from c##finnk.tab_listado_empleados
+        where fk_restaurante = p_id_restaurante
+        ) loop
+        dbms_output.put_line('id_empleado: ' || emp.id_empleado);
+        dbms_output.put_line('nombre_empleado: ' || emp.nombre_empleado);
+        end loop;
+    end obtenerempleadosporrestaurante;
+
+    procedure actualizarsalarioempleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_salario_empleado in c##finnk.tab_listado_empleados.salario_empleado%type   
+    ) as
+    begin
+        update c##finnk.tab_listado_empleados
+        set salario_empleado = p_salario_empleado
+        where id_empleado = p_id_empleado;
+        commit;
+    end actualizarsalarioempleado;
+
+    procedure obtenerempleadosporsalariomaximo as
+        v_id_empleado c##finnk.tab_listado_empleados.id_empleado%type;
+        v_nombre_empleado c##finnk.tab_listado_empleados.nombre_empleado%type;
+    begin
+        declare
+        v_salario_maximo c##finnk.tab_listado_empleados.salario_empleado%type;
+        begin
+        select max(salario_empleado) into v_salario_maximo from c##finnk.tab_listado_empleados;
+      
+        for emp in (select *
+                  from c##finnk.tab_listado_empleados
+                  where salario_empleado = v_salario_maximo)
+        loop
+            v_id_empleado := emp.id_empleado;
+            v_nombre_empleado := emp.nombre_empleado;
+        
+            dbms_output.put_line('id_empleado: ' || v_id_empleado);
+            dbms_output.put_line('nombre_empleado: ' || v_nombre_empleado);
+        end loop;
+        end;
+    end obtenerempleadosporsalariomaximo;
+
+    procedure obtenerempleadosporsalariominimo as
+        v_id_empleado c##finnk.tab_listado_empleados.id_empleado%type;
+        v_nombre_empleado c##finnk.tab_listado_empleados.nombre_empleado%type;
+    begin
+        declare
+        v_salario_minimo c##finnk.tab_listado_empleados.salario_empleado%type;
+        begin
+        select min(salario_empleado) into v_salario_minimo from c##finnk.tab_listado_empleados;
+      
+        for emp in (select *
+                    from c##finnk.tab_listado_empleados
+                    where salario_empleado = v_salario_minimo)
+        loop
+            v_id_empleado := emp.id_empleado;
+            v_nombre_empleado := emp.nombre_empleado;
+        
+            dbms_output.put_line('id_empleado: ' || v_id_empleado);
+            dbms_output.put_line('nombre_empleado: ' || v_nombre_empleado);
+        end loop;
+        end;
+    end obtenerempleadosporsalariominimo;
+
+    procedure actualizarnombreempleado(
+        p_id_empleado in c##finnk.tab_listado_empleados.id_empleado%type,
+        p_nombre_empleado in c##finnk.tab_listado_empleados.nombre_empleado%type
+    ) as
+    begin
+        update c##finnk.tab_listado_empleados
+        set nombre_empleado = p_nombre_empleado
+        where id_empleado = p_id_empleado;
+        commit;    
+    end actualizarnombreempleado;
+
+    procedure obtenernumeroempleadosportienda(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_numero_empleados out number
+    ) as
+    begin
+        select count(*)
+        into p_numero_empleados
+        from c##finnk.tab_listado_empleados
+        where fk_restaurante = p_id_restaurante;
+    end obtenernumeroempleadosportienda;
+end pkg_gestion_empleados;
+
+--Paquete 10
+--gestion de restaurantes y localidades
+create or replace package c##finnk.pkg_gestion_restaurantes_localidades as
+  
+  procedure obtenerrrestaurantesporlocalidad(
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_numero_restaurantes out number
+    );
+
+    procedure insertarrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_estado_restaurante in c##finnk.tab_listado_restaurante.estado_restaurante%type
+    );
+
+    procedure seleccionarrestaurantes;
+end pkg_gestion_restaurantes_localidades;
+
+create or replace package body c##finnk.pkg_gestion_restaurantes_localidades as
+    procedure obtenerrrestaurantesporlocalidad(
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_numero_restaurantes out number
+    ) as
+    begin
+        select count(*)
+        into p_numero_restaurantes
+        from c##finnk.tab_listado_restaurante
+        where localidad_restaurante = p_localidad_restaurante;
+    end obtenerrrestaurantesporlocalidad;
+
+    procedure insertarrestaurante(
+        p_id_restaurante in c##finnk.tab_listado_restaurante.id_restaurante%type,
+        p_localidad_restaurante in c##finnk.tab_listado_restaurante.localidad_restaurante%type,
+        p_estado_restaurante in c##finnk.tab_listado_restaurante.estado_restaurante%type
+    ) as
+    begin
+        insert into c##finnk.tab_listado_restaurante(id_restaurante, localidad_restaurante, estado_restaurante)
+        values (p_id_restaurante, p_localidad_restaurante, p_estado_restaurante);
+        commit;
+    end insertarrestaurante;
+
+    procedure seleccionarrestaurantes as
+        cursor c_restaurantes is
+        select id_restaurante, localidad_restaurante, estado_restaurante
+        from c##finnk.tab_listado_restaurante;
+      
+        v_id_restaurante c##finnk.tab_listado_restaurante.id_restaurante%type;
+        v_localidad_restaurante c##finnk.tab_listado_restaurante.localidad_restaurante%type;
+        v_estado_restaurante c##finnk.tab_listado_restaurante.estado_restaurante%type;
+    begin
+        open c_restaurantes;
+        loop
+        fetch c_restaurantes into v_id_restaurante, v_localidad_restaurante, v_estado_restaurante;
+        exit when c_restaurantes%notfound;
+        dbms_output.put_line('ID Restaurante: ' || v_id_restaurante || ', Localidad: ' || v_localidad_restaurante || ', Estado: ' || v_estado_restaurante);
+        end loop;
+        close c_restaurantes;
+    end seleccionarrestaurantes;
+end pkg_gestion_restaurantes_localidades;
