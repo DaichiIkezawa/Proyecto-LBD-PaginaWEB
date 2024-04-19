@@ -785,7 +785,7 @@ end;
 
 --F2
 --funcion para obtener el promedio de ventas diarias por restaurante
-create or replace function calcular_promedio_ventas_diarias(restaurante_id in number) return number is
+create or replace function calcular_promedio_ventas_diarias(p_restaurante_id in number) return number is
     total_ventas number:= 0;
     total_dias number := 0;
     promedio_ventas_diarias number:=0;
@@ -793,7 +793,7 @@ begin
     select sum(monto_venta), count(distinct fecha_venta)
     into total_ventas, total_dias
     from c##finnk.tabla_ventas_relacionada
-    where restaurante_id = restaurante_id;
+    where restaurante_id = p_restaurante_id;
     
     if total_dias > 0then
         promedio_ventas_diarias:= total_ventas /total_dias;
@@ -808,8 +808,8 @@ end;
 declare 
     promedio_ventas number;
 begin
-    promedio_ventas:= calcular_promedio_ventas_diarias(restaurante_id => 1);
-    DBMS_OUTPUT.PUT_LINE('El promedio diario de ventas es: ' ||promedio_ventas);
+    promedio_ventas:= calcular_promedio_ventas_diarias(p_restaurante_id => 2);
+    DBMS_OUTPUT.PUT_LINE('El promedio diario de ventas es: ' || promedio_ventas);
 end;
 
 
@@ -904,14 +904,14 @@ end;
 
 --F6
 --Función para calcular el total de ventas por restaurante
-create or replace function total_ventas_por_restaurante(restaurante_id in number)
+create or replace function total_ventas_por_restaurante(p_restaurante_id in number)
 return number is
     total_ventas number :=0;
 begin 
     select sum(monto_venta)
     into total_ventas
     from c##finnk.tabla_ventas_relacionada
-    where restaurante_id = restaurante_id;
+    where restaurante_id = p_restaurante_id;
     
     return total_ventas;
 exception
@@ -949,7 +949,7 @@ end;
 declare
     salario_minimo NUMBER;
 begin
-    salario_minimo := salario_mas_bajo_restaurante(1);
+    salario_minimo := salario_mas_bajo_restaurante(2);
     DBMS_OUTPUT.PUT_LINE('Salario más bajo para el restaurante es: ' || salario_minimo);
 end;
 
@@ -1068,20 +1068,21 @@ end;
 
 --para correrlo
 declare
-    empleado_reciente VARCHAR2(50);
+    empleado_reciente_result VARCHAR2(50);
 begin
-    empleado_reciente := empleado_mas_reciente(1); 
-    DBMS_OUTPUT.PUT_LINE('Empleado más reciente: ' || empleado_reciente);
+    empleado_reciente_result := empleado_mas_reciente(1); 
+    DBMS_OUTPUT.PUT_LINE('Empleado más reciente: ' || empleado_reciente_result);
 end;
 
 select * from c##finnk.tab_listado_empleados;
+
 INSERT INTO C##finnk.tab_listado_empleados (id_empleado, nombre_empleado, apellidos_empleado, correo_empleado, telefono_empleado, salario_empleado, puesto_empleado, nacionalidad_empleado, estado_empleado, fk_restaurante, fecha_contratacion)
   VALUES (9, 'Sebastian', 'alvarado vargas', 'salvaradov@hotmail.com', '87065480', '650400', 'gerente', 'Costarricense', 'Y', 1 ,'19-APR-24');
   
 --F12
 --Función para calcular el total de ventas en un restaurante en un día específico
 create or replace function ventas_restaurante_dia(
-    restaurante_id in number,
+    p_restaurante_id in number,
     fecha_venta_in in date
 )return number is
     total_ventas_dia number:=0;
@@ -1089,7 +1090,7 @@ begin
     select sum(monto_venta)
     into total_ventas_dia
     from c##finnk.tabla_ventas_relacionada
-    where restaurante_id = restaurante_id
+    where restaurante_id = p_restaurante_id
     and trunc(fecha_venta) = trunc(fecha_venta_in);
     
     return total_ventas_dia;
@@ -1107,7 +1108,7 @@ begin
 end;
 
 --F13
---Función para obtener el total de reclamos recibidos en el último mes
+--Función para obtener el total de reclamos recibidos en una fecha especifica
 create or replace function reclamos_fecha_especifica(fecha_consulta date)
 return number is
     total_reclamos number:= 0;
@@ -1172,14 +1173,14 @@ end;
 
 --F15
 --Función para determinar el promedio de precios de las comidas
-create or replace function promedio_precios_por_restaurante(restaurante_id in number)
+create or replace function promedio_precios_por_restaurante(p_restaurante_id in number)
 return number is
     promedio_precios number;
 begin
     select avg(precio_comida)
     into promedio_precios
     from c##finnk.tab_catalogo_comidas
-    where id_restaurante = restaurante_id;
+    where id_restaurante = p_restaurante_id;
     
     return promedio_precios;
 exception
@@ -1192,7 +1193,7 @@ end;
 declare
     promedio NUMBER;
 begin
-    promedio := promedio_precios_por_restaurante(restaurante_id =>1);
+    promedio := promedio_precios_por_restaurante(p_restaurante_id =>1);
     DBMS_OUTPUT.PUT_LINE('El promedio de precios de las comidas para el restaurante es: ' || promedio);
 end;
 
@@ -2044,7 +2045,7 @@ BEGIN
     EXIT WHEN empleados_disponibles_cursor%NOTFOUND;
     
     -- Mostrar los datos de los empleados disponibles
-    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel�fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
+    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel?fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
   END LOOP;
   
   CLOSE empleados_disponibles_cursor;
@@ -2137,7 +2138,7 @@ BEGIN
     EXIT WHEN empleados_disponibles_cursor%NOTFOUND;
     
     -- Mostrar los datos de los empleados disponibles
-    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel�fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
+    DBMS_OUTPUT.PUT_LINE('ID Empleado: ' || v_id_empleado || ', Nombre: ' || v_nombre_empleado || ' ' || v_apellidos_empleado || ', Correo: ' || v_correo_empleado || ', Tel?fono: ' || v_telefono_empleado || ', Salario: ' || v_salario_empleado || ', Puesto: ' || v_puesto_empleado || ', Nacionalidad: ' || v_nacionalidad_empleado || ', Estado: ' || v_estado_empleado || ', Restaurante: ' || v_fk_restaurante);
   END LOOP;
   
   CLOSE empleados_disponibles_cursor;
